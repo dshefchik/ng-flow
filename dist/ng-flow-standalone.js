@@ -357,48 +357,59 @@
      * be selected (Chrome only).
      */
     assignBrowse: function (domNodes, isDirectory, singleFile, attributes) {
-      if (typeof domNodes.length === 'undefined') {
-        domNodes = [domNodes];
-      }
+        if (typeof domNodes.length === 'undefined') {
+            domNodes = [domNodes];
+        }
+        each(domNodes, function (domNode) {
+            function onSelectionChange (e) {
+                if (e.target.value) {
+                    $.addFiles(e.target.files, e);
+                    e.target.value = '';
+                }
+            }
 
-      each(domNodes, function (domNode) {
-        var input;
-        if (domNode.tagName === 'INPUT' && domNode.type === 'file') {
-          input = domNode;
-        } else {
-          input = document.createElement('input');
-          input.setAttribute('type', 'file');
-          // display:none - not working in opera 12
-          extend(input.style, {
-            visibility: 'hidden',
-            position: 'absolute'
-          });
-          // for opera 12 browser, input must be assigned to a document
-          domNode.appendChild(input);
-          // https://developer.mozilla.org/en/using_files_from_web_applications)
-          // event listener is executed two times
-          // first one - original mouse click event
-          // second - input.click(), input is inside domNode
-          domNode.addEventListener('click', function() {
-            input.click();
-          }, false);
-        }
-        if (!this.opts.singleFile && !singleFile) {
-          input.setAttribute('multiple', 'multiple');
-        }
-        if (isDirectory) {
-          input.setAttribute('webkitdirectory', 'webkitdirectory');
-        }
-        each(attributes, function (value, key) {
-          input.setAttribute(key, value);
-        });
-        // When new files are added, simply append them to the overall list
-        var $ = this;
-        input.addEventListener('change', function (e) {
-          $.addFiles(e.target.files, e);
-          e.target.value = '';
-        }, false);
-      }, this);
+            var $ = this;
+            var input;
+            if (domNode.tagName === 'INPUT' && domNode.type === 'file') {
+                input = domNode;
+            } else {
+                input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                // display:none - not working in opera 12
+                extend(input.style, {
+                    visibility: 'hidden',
+                    position: 'absolute'
+                });
+                // for opera 12 browser, input must be assigned to a document
+                domNode.appendChild(input);
+                // https://developer.mozilla.org/en/using_files_from_web_applications)
+                // event listener is executed two times
+                // first one - original mouse click event
+                // second - input.click(), input is inside domNode
+                domNode.addEventListener('click', function () {
+                    //http://stackoverflow.com/questions/1043957/clearing-input-type-file-using-jquery/13351234#13351234
+                    // reset input node to avoid select same file change event not fire issue.
+                    if (input.value) {
+                        domNode.innerHTML = domNode.innerHTML; // reset input file
+                        input = domNode.children[0];
+                        input.addEventListener('change', onSelectionChange, false);
+                    }
+                    input.click();
+                }, false);
+            }
+            if (!this.opts.singleFile && !singleFile) {
+                input.setAttribute('multiple', 'multiple');
+            }
+            if (isDirectory) {
+                input.setAttribute('webkitdirectory', 'webkitdirectory');
+            }
+            each(attributes, function (value, key) {
+                input.setAttribute(key, value);
+            });
+            // When new files are added, simply append them to the overall list
+
+            input.addEventListener('change', onSelectionChange, false);
+        }, this);
     },
 
     /**
